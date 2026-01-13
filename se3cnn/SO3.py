@@ -507,7 +507,7 @@ def get_d_null_space(l1, l2, l3, eps=1e-10):
         del D
         gc.collect()
 
-    s, v = scipy.linalg.eigh(B.numpy(), eigvals=(0, min(1, n - 1)), overwrite_a=True)                   # ask for one (smallest) eigenvalue/eigenvector pair if there is only one exists, otherwise ask for two
+    s, v = scipy.linalg.eigh(B.numpy(), subset_by_index=(0, min(1, n - 1)), overwrite_a=True)                   # ask for one (smallest) eigenvalue/eigenvector pair if there is only one exists, otherwise ask for two
     del B
     gc.collect()
 
