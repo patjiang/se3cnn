@@ -19,5 +19,8 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["se3cnn"]
+packages = {find = {include = ["se3cnn*"]}}
 zip-safe = false
+
+[tool.setuptools.package-data]
+"*" = ["*.so", "*.pth", "*.cu", "*.cpp", "*.h"]
