@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools", "wheel", "torch"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "se3cnn"
+version = "0.1.0"
+dependencies = [
+    "scipy",
+    "lie_learn @ git+https://github.com/AMLab-Amsterdam/lie_learn",
+    "appdirs",
+]
