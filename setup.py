@@ -17,8 +17,10 @@ elif torch.cuda.is_available() and CUDA_HOME is not None:
         CUDAExtension('se3cnn.real_spherical_harmonics',
                       sources=['src/real_spherical_harmonics/rsh_bind.cpp',
                                'src/real_spherical_harmonics/rsh_cuda.cu'],
-                      extra_compile_args={'cxx': ['-std=c++14'],
-                                          'nvcc': ['-std=c++14']})
+                      extra_compile_args={
+                          'cxx': ['-std=c++17', '-O3'], 
+                          'nvcc': ['-std=c++17']
+                      })
     ]
 else:
     # GPU is available, but CUDA_HOME is None
