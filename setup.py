@@ -1,8 +1,6 @@
 import os
 import subprocess
 from setuptools import setup, find_packages
-import torch
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME
 
 def get_compiler_type():
     cxx = os.environ.get('CXX', 'g++')
@@ -16,43 +14,57 @@ def get_compiler_type():
         pass
     return 'gcc'
 
-compiler_type = get_compiler_type()
+def get_ext_modules():
+    try:
+        import torch
+        from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME
+    except Exception:
+        return None, {}
 
-cxx_flags = ['-std=c++17', '-O3']
-nvcc_flags = ['-std=c++17']
+    compiler_type = get_compiler_type()
+    cxx_flags = ['-std=c++17', '-O3']
+    nvcc_flags = ['-std=c++17']
 
-if compiler_type == 'intel':
-    nvcc_flags += ['--allow-unsupported-compiler']
-    cxx_flags += ['-fp-model=precise']
-elif compiler_type == 'gcc':
-    cxx_flags += ['-Wno-deprecated-declarations']
+    if compiler_type == 'intel':
+        nvcc_flags += ['--allow-unsupported-compiler']
+        cxx_flags += ['-fp-model=precise']
+    elif compiler_type == 'gcc':
+        cxx_flags += ['-Wno-deprecated-declarations']
 
-if not torch.cuda.is_available():
-    ext_modules = None
-elif torch.cuda.is_available() and CUDA_HOME is not None:
-    ext_modules = [
-        CUDAExtension(
-            name='se3cnn.real_spherical_harmonics',
-            sources=[
-                'src/real_spherical_harmonics/rsh_bind.cpp',
-                'src/real_spherical_harmonics/rsh_cuda.cu'
-            ],
-            extra_compile_args={
-                'cxx': cxx_flags,
-                'nvcc': nvcc_flags
-            }
-        )
-    ]
-else:
-    ext_modules = None
+    force_build = os.environ.get('FORCE_CUDA_BUILD', '0') == '1'
+
+    if (torch.cuda.is_available() and CUDA_HOME is not None) or force_build:
+        ext_modules = [
+            CUDAExtension(
+                name='se3cnn.real_spherical_harmonics',
+                sources=[
+                    'src/real_spherical_harmonics/rsh_bind.cpp',
+                    'src/real_spherical_harmonics/rsh_cuda.cu'
+                ],
+                extra_compile_args={
+                    'cxx': cxx_flags,
+                    'nvcc': nvcc_flags
+                }
+            )
+        ]
+        cmdclass = {'build_ext': BuildExtension}
+    else:
+        ext_modules = None
+        cmdclass = {}
+
+    return ext_modules, cmdclass
+
+ext_modules, cmdclass = get_ext_modules()
 
 setup(
     name='se3cnn',
     url='https://github.com/mariogeiger/se3cnn',
     author='Mario Geiger',
+    version='0.1.0',
+    python_requires='>=3.8',
     install_requires=[
         'scipy',
-        'appdirs'
+        'appdirs',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -60,6 +72,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     ext_modules=ext_modules,
-    cmdclass={'build_ext': BuildExtension},
+    cmdclass=cmdclass,
     packages=find_packages(),
+    zip_safe=False,
 )
