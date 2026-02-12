@@ -1,40 +1,59 @@
-# pylint: disable=not-callable, no-member, invalid-name, line-too-long, wildcard-import, unused-wildcard-import, missing-docstring
+import os
+import subprocess
 from setuptools import setup, find_packages
 import torch
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME
 
-# python setup.py develop    - if you wont to be able to execute from PyCharm (or similar IDE) - places .so file into se3cnn folder from which real_spherical_harmonics imports
+def get_compiler_type():
+    cxx = os.environ.get('CXX', 'g++')
+    try:
+        out = subprocess.check_output([cxx, '--version'], stderr=subprocess.STDOUT).decode()
+        if 'icpx' in out or 'oneAPI' in out or 'Intel' in out:
+            return 'intel'
+        if 'clang' in out:
+            return 'clang'
+    except Exception:
+        pass
+    return 'gcc'
 
-# Or:
-# python setup.py build_ext
-# python setup.py install    - PyCharm won't work, because it can't resolve import, but executable from terminal
+compiler_type = get_compiler_type()
+
+cxx_flags = ['-std=c++17', '-O3']
+nvcc_flags = ['-std=c++17']
+
+if compiler_type == 'intel':
+    nvcc_flags += ['--allow-unsupported-compiler']
+    cxx_flags += ['-fp-model=precise']
+elif compiler_type == 'gcc':
+    cxx_flags += ['-Wno-deprecated-declarations']
 
 if not torch.cuda.is_available():
     ext_modules = None
-    print("GPU is not available. Skip building CUDA extensions.")
 elif torch.cuda.is_available() and CUDA_HOME is not None:
     ext_modules = [
-        CUDAExtension('se3cnn.real_spherical_harmonics',
-                      sources=['src/real_spherical_harmonics/rsh_bind.cpp',
-                               'src/real_spherical_harmonics/rsh_cuda.cu'],
-                      extra_compile_args={
-                          'cxx': ['-std=c++17', '-O3'], 
-                          'nvcc': ['-std=c++17']
-                      })
+        CUDAExtension(
+            name='se3cnn.real_spherical_harmonics',
+            sources=[
+                'src/real_spherical_harmonics/rsh_bind.cpp',
+                'src/real_spherical_harmonics/rsh_cuda.cu'
+            ],
+            extra_compile_args={
+                'cxx': cxx_flags,
+                'nvcc': nvcc_flags
+            }
+        )
     ]
 else:
-    # GPU is available, but CUDA_HOME is None
-    raise AssertionError("CUDA_HOME is undefined. Make sure nvcc compiler is available (cuda toolkit installed?)")
+    ext_modules = None
 
 setup(
     name='se3cnn',
     url='https://github.com/mariogeiger/se3cnn',
+    author='Mario Geiger',
     install_requires=[
         'scipy',
-        'lie_learn',
         'appdirs'
     ],
-    dependency_links=['https://github.com/AMLab-Amsterdam/lie_learn'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
