@@ -1,12 +1,23 @@
 [build-system]
-requires = ["setuptools>=61", "wheel", "torch"]
+requires = ["setuptools>=61.0", "wheel", "torch"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "se3cnn"
 version = "0.1.0"
+authors = [{name = "Mario Geiger"}]
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "scipy",
-    "lie_learn @ git+https://github.com/AMLab-Amsterdam/lie_learn",
     "appdirs",
+    "lie_learn @ git+https://github.com/AMLab-Amsterdam/lie_learn",
 ]
+
+[tool.setuptools]
+packages = ["se3cnn"]
+zip-safe = false
